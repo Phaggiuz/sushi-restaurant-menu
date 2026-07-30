@@ -1,0 +1,309 @@
+.client-page {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-self: stretch;
+}
+
+.customer-header {
+    width: 100%;
+    height: 85px;
+    flex-shrink: 0;
+    background: #090908;
+    border-bottom: 1px solid rgba(211, 171, 111, 0.08);
+}
+
+.customer-header__container {
+    width: 100%;
+    max-width: 1348px;
+    min-width: 0;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+/* Brand */
+
+.customer-header__brand {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.customer-header__logo {
+    color: #f4eee4;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 27px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.5px;
+}
+
+.customer-header__subtitle {
+    margin-top: 5px;
+    color: #8c7b68;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Order button */
+
+.customer-header__order-button {
+    min-width: 122px;
+    height: 46px;
+    padding: 0 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    flex-shrink: 0;
+    color: #d6b17b;
+    background: transparent;
+    border: 1px solid #302a23;
+    border-radius: 999px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.customer-header__order-button:hover {
+    color: #edc98e;
+    background: #13110e;
+    border-color: #554734;
+}
+
+.customer-header__order-button:focus-visible {
+    outline: 2px solid #c99d64;
+    outline-offset: 3px;
+}
+
+.customer-header__order-icon {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Hero */
+
+.customer-hero {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    flex: 0 0 auto;
+    overflow: hidden;
+    background: #090908;
+}
+
+.customer-hero__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.customer-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        to bottom,
+        rgba(9, 9, 8, 0.08) 0%,
+        rgba(9, 9, 8, 0.2) 55%,
+        rgba(9, 9, 8, 0.85) 100%
+    );
+}
+
+/* Category navigation */
+
+.category-navigation {
+    width: 100%;
+    flex: 0 0 auto;
+    background: #090908;
+    border-bottom: 1px solid #25211d;
+}
+
+.category-navigation__container {
+    width: 100%;
+    max-width: 1348px;
+    min-width: 0;
+    min-height: 72px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.category-navigation__container::-webkit-scrollbar {
+    display: none;
+}
+
+.category-navigation__item {
+    flex: 0 0 auto;
+    padding: 11px 16px;
+    color: #998b7c;
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.category-navigation__item:hover {
+    color: #f1e7da;
+}
+
+.category-navigation__item:focus-visible {
+    outline: 2px solid #c99d64;
+    outline-offset: 2px;
+}
+
+.category-navigation__item--active {
+    padding-inline: 24px;
+    color: #fff7ef;
+    background: #d78264;
+}
+
+.category-navigation__item--active:hover {
+    color: #fff7ef;
+    background: #df8c6d;
+}
+
+/* Tablet */
+
+@media (max-width: 900px) {
+    .customer-header__container,
+    .category-navigation__container {
+        padding-inline: 20px;
+    }
+
+    .customer-hero {
+        height: 220px;
+    }
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+    .customer-header {
+        height: 70px;
+    }
+
+    .customer-header__container {
+        gap: 12px;
+        padding-inline: 14px;
+    }
+
+    .customer-header__logo {
+        font-size: 23px;
+    }
+
+    .customer-header__subtitle {
+        margin-top: 4px;
+        font-size: 7px;
+        letter-spacing: 2.5px;
+    }
+
+    .customer-header__order-button {
+        min-width: auto;
+        height: 40px;
+        padding-inline: 14px;
+        gap: 8px;
+        font-size: 15px;
+    }
+
+    .customer-header__order-icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .customer-hero {
+        height: 180px;
+    }
+
+    .category-navigation__container {
+        min-height: 62px;
+        padding-inline: 14px;
+        gap: 8px;
+        scroll-padding-inline: 14px;
+    }
+
+    .category-navigation__item {
+        padding: 10px 13px;
+        font-size: 15px;
+    }
+
+    .category-navigation__item--active {
+        padding-inline: 20px;
+    }
+}
+
+/* Telefoni molto stretti */
+
+@media (max-width: 360px) {
+    .customer-header__container {
+        gap: 8px;
+        padding-inline: 10px;
+    }
+
+    .customer-header__subtitle {
+        max-width: 145px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .customer-header__order-button {
+        height: 38px;
+        padding-inline: 10px;
+        gap: 6px;
+        font-size: 14px;
+    }
+
+    .customer-header__order-icon {
+        width: 17px;
+        height: 17px;
+    }
+
+    .customer-hero {
+        height: 155px;
+    }
+
+    .category-navigation__container {
+        padding-inline: 10px;
+    }
+}

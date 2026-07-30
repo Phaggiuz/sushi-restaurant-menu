@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="sushi-restaurant-project.Shared/sushi-restaurant-project.Shared.csproj" />
+  <Project Path="sushi-restaurant-project.Web/sushi-restaurant-project.Web.csproj" />
+  <Project Path="sushi-restaurant-project/sushi-restaurant-project.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+</Solution>

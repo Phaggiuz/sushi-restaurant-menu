@@ -1,0 +1,103 @@
+@page "/"
+@using sushi_restaurant_project.Shared.Models
+@using sushi_restaurant_project.Shared.Services
+@inject IPlateService PlateService
+
+<div class="client-page">
+    <header class="customer-header">
+        <div class="customer-header__container">
+
+            <div class="customer-header__brand" aria-label="Umi Omakase & Sushi Bar">
+                <span class="customer-header__logo">Umi</span>
+                <span class="customer-header__subtitle">
+                    Omakase &amp; Sushi Bar
+                </span>
+            </div>
+
+            <button class="customer-header__order-button"
+                    type="button"
+                    aria-label="Visualizza ordine">
+
+                <svg class="customer-header__order-icon"
+                     viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <path d="M5.5 7.5h13l-1 12h-11l-1-12Z" />
+                    <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+                    <path d="M9 12h6" />
+                </svg>
+
+                <span>Order</span>
+            </button>
+
+        </div>
+    </header>
+
+    <section class="customer-hero">
+        <img class="customer-hero__image"
+             src="image/sushi-hero.png"
+             alt="Selezione di sushi preparata dal ristorante" />
+    </section>
+
+    <nav class="category-navigation" aria-label="Categorie del menu">
+        <div class="category-navigation__container">
+
+            <button type="button"
+                    class="@GetCategoryClass(AllCategory)"
+                    aria-pressed="@IsCategorySelected(AllCategory)"
+                    @onclick="() => SelectCategory(AllCategory)">
+                All
+            </button>
+
+            @foreach (var categoria in Categorie)
+            {
+                <button type="button"
+                        class="@GetCategoryClass(categoria)"
+                        aria-pressed="@IsCategorySelected(categoria)"
+                        @onclick="() => SelectCategory(categoria)">
+                    @categoria
+                </button>
+            }
+
+        </div>
+    </nav>
+</div>
+
+@code {
+    private const string AllCategory = "All";
+
+    private List<Plate> plates = [];
+    private string selectedCategory = AllCategory;
+
+    private IEnumerable<string> Categorie =>
+        plates
+            .Select(plate => plate.Category)
+            .Where(category => !string.IsNullOrWhiteSpace(category))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        plates = await PlateService.GetPlatesAsync();
+    }
+
+    private void SelectCategory(string category)
+    {
+        selectedCategory = category;
+    }
+
+    private bool IsCategorySelected(string category)
+    {
+        return string.Equals(
+            selectedCategory,
+            category,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetCategoryClass(string category)
+    {
+        const string baseClass = "category-navigation__item";
+
+        return IsCategorySelected(category)
+            ? $"{baseClass} {baseClass}--active"
+            : baseClass;
+    }
+}
