@@ -6,7 +6,7 @@
       "Category": "Antipasti",
       "Name": "Edamame",
       "Description": "Baccelli di soia al vapore con sale.",
-      "UrlImage": "images/menu/edamame.jpg",
+      "UrlImage": "image/edamame.png",
       "Price": 4.00,
       "IsFrozen": false,
       "Allergens": [
@@ -19,7 +19,7 @@
       "Category": "Antipasti",
       "Name": "Gyoza di carne",
       "Description": "Ravioli giapponesi ripieni di carne e verdure.",
-      "UrlImage": "images/menu/gyoza-carne.jpg",
+      "UrlImage": "image/gyoza-carne.png",
       "Price": 5.50,
       "IsFrozen": true,
       "Allergens": [
@@ -33,7 +33,7 @@
       "Category": "Nigiri",
       "Name": "Nigiri salmone",
       "Description": "Riso condito con una fettina di salmone.",
-      "UrlImage": "images/menu/nigiri-salmone.jpg",
+      "UrlImage": "image/nigiri-salmone.png",
       "Price": 3.50,
       "IsFrozen": true,
       "Allergens": [
@@ -46,7 +46,7 @@
       "Category": "Nigiri",
       "Name": "Nigiri tonno",
       "Description": "Riso condito con una fettina di tonno.",
-      "UrlImage": "images/menu/nigiri-tonno.jpg",
+      "UrlImage": "image/nigiri-tonno.png",
       "Price": 4.00,
       "IsFrozen": true,
       "Allergens": [
@@ -59,7 +59,7 @@
       "Category": "Uramaki",
       "Name": "Uramaki salmone e avocado",
       "Description": "Roll con salmone, avocado e semi di sesamo.",
-      "UrlImage": "images/menu/uramaki-salmone-avocado.jpg",
+      "UrlImage": "image/uramaki-salmone-avocado.png",
       "Price": 8.50,
       "IsFrozen": true,
       "Allergens": [
@@ -73,7 +73,7 @@
       "Category": "Uramaki",
       "Name": "Uramaki spicy tuna",
       "Description": "Roll con tonno, salsa piccante e semi di sesamo.",
-      "UrlImage": "images/menu/uramaki-spicy-tuna.jpg",
+      "UrlImage": "image/uramaki-spicy-tuna.png",
       "Price": 9.00,
       "IsFrozen": true,
       "Allergens": [
@@ -88,7 +88,7 @@
       "Category": "Bevande",
       "Name": "Acqua naturale",
       "Description": "Bottiglia di acqua naturale da 50 cl.",
-      "UrlImage": "images/menu/acqua-naturale.jpg",
+      "UrlImage": "image/acqua-naturale.png",
       "Price": 2.00,
       "IsFrozen": false,
       "Allergens": []
@@ -99,7 +99,7 @@
       "Category": "Bevande",
       "Name": "Tè verde",
       "Description": "Tè verde giapponese servito caldo.",
-      "UrlImage": "images/menu/te-verde.jpg",
+      "UrlImage": "image/te-verde.png",
       "Price": 3.00,
       "IsFrozen": false,
       "Allergens": []
@@ -110,7 +110,7 @@
       "Category": "Dessert",
       "Name": "Mochi al mango",
       "Description": "Dolce di riso con ripieno cremoso al mango.",
-      "UrlImage": "images/menu/mochi-mango.jpg",
+      "UrlImage": "image/mochi-mango.png",
       "Price": 4.50,
       "IsFrozen": true,
       "Allergens": [
@@ -123,7 +123,7 @@
       "Category": "Dessert",
       "Name": "Dorayaki",
       "Description": "Dolce giapponese farcito con crema di fagioli rossi.",
-      "UrlImage": "images/menu/dorayaki.jpg",
+      "UrlImage": "image/dorayaki.png",
       "Price": 4.00,
       "IsFrozen": false,
       "Allergens": [

@@ -1,14 +1,21 @@
 @page "/"
+@using System.Globalization
 @using sushi_restaurant_project.Shared.Models
 @using sushi_restaurant_project.Shared.Services
 @inject IPlateService PlateService
 
 <div class="client-page">
+
     <header class="customer-header">
         <div class="customer-header__container">
 
-            <div class="customer-header__brand" aria-label="Umi Omakase & Sushi Bar">
-                <span class="customer-header__logo">Umi</span>
+            <div class="customer-header__brand"
+                 aria-label="Umi Omakase & Sushi Bar">
+
+                <span class="customer-header__logo">
+                    Umi
+                </span>
+
                 <span class="customer-header__subtitle">
                     Omakase &amp; Sushi Bar
                 </span>
@@ -21,6 +28,7 @@
                 <svg class="customer-header__order-icon"
                      viewBox="0 0 24 24"
                      aria-hidden="true">
+
                     <path d="M5.5 7.5h13l-1 12h-11l-1-12Z" />
                     <path d="M9 8V6a3 3 0 0 1 6 0v2" />
                     <path d="M9 12h6" />
@@ -38,28 +46,183 @@
              alt="Selezione di sushi preparata dal ristorante" />
     </section>
 
-    <nav class="category-navigation" aria-label="Categorie del menu">
+    <nav class="category-navigation"
+         aria-label="Categorie del menu">
+
         <div class="category-navigation__container">
 
             <button type="button"
                     class="@GetCategoryClass(AllCategory)"
                     aria-pressed="@IsCategorySelected(AllCategory)"
                     @onclick="() => SelectCategory(AllCategory)">
+
                 All
             </button>
 
-            @foreach (var categoria in Categorie)
+            @foreach (var category in Categories)
             {
                 <button type="button"
-                        class="@GetCategoryClass(categoria)"
-                        aria-pressed="@IsCategorySelected(categoria)"
-                        @onclick="() => SelectCategory(categoria)">
-                    @categoria
+                        class="@GetCategoryClass(category)"
+                        aria-pressed="@IsCategorySelected(category)"
+                        @onclick="() => SelectCategory(category)">
+
+                    @category
                 </button>
             }
 
         </div>
     </nav>
+
+    <main class="menu-section">
+
+        @if (isLoading)
+        {
+            <div class="menu-section__message">
+                Caricamento menu...
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="menu-section__message menu-section__message--error">
+                @errorMessage
+            </div>
+        }
+        else if (!FilteredPlates.Any())
+        {
+            <div class="menu-section__message">
+                Nessun piatto disponibile per la categoria selezionata.
+            </div>
+        }
+        else
+        {
+            <div class="plates-grid">
+
+                @foreach (var plate in FilteredPlates)
+                {
+                    <article class="plate-card"
+                             @key="plate.Id">
+
+                        <div class="plate-card__image-container">
+
+                            <img class="plate-card__image"
+                                 src="@GetPlateImageUrl(plate.UrlImage)"
+                                 alt="@plate.Name"
+                                 loading="lazy" />
+
+                            @if (plate.IsFrozen)
+                            {
+                                <span class="plate-card__frozen-badge">
+                                    Surgelato
+                                </span>
+                            }
+
+                        </div>
+
+                        <div class="plate-card__content">
+
+                            <div class="plate-card__header">
+
+                                <div class="plate-card__title-container">
+
+                                    <span class="plate-card__category">
+                                        @plate.Category
+                                    </span>
+
+                                    <h2 class="plate-card__name">
+                                        @plate.Name
+                                    </h2>
+
+                                </div>
+
+                                <div class="plate-card__price">
+                                    @FormatPrice(plate.Price)
+                                </div>
+
+                            </div>
+
+                            <p class="plate-card__description">
+                                @plate.Description
+                            </p>
+
+                            <div class="plate-card__details">
+
+                                <div class="plate-card__detail">
+                                    <span class="plate-card__detail-label">
+                                        Codice
+                                    </span>
+
+                                    <span class="plate-card__detail-value">
+                                        @plate.Code
+                                    </span>
+                                </div>
+
+                                <div class="plate-card__detail">
+                                    <span class="plate-card__detail-label">
+                                        ID
+                                    </span>
+
+                                    <span class="plate-card__detail-value">
+                                        @plate.Id
+                                    </span>
+                                </div>
+
+                                <div class="plate-card__detail">
+                                    <span class="plate-card__detail-label">
+                                        Surgelato
+                                    </span>
+
+                                    <span class="plate-card__detail-value">
+                                        @(plate.IsFrozen ? "Sì" : "No")
+                                    </span>
+                                </div>
+
+                            </div>
+
+                            <div class="plate-card__allergens">
+
+                                <span class="plate-card__allergens-title">
+                                    Allergeni
+                                </span>
+
+                                @if (plate.Allergens?.Any() == true)
+                                {
+                                    <div class="plate-card__allergens-list">
+
+                                        @foreach (var allergen in plate.Allergens)
+                                        {
+                                            <span class="plate-card__allergen">
+                                                @allergen
+                                            </span>
+                                        }
+
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="plate-card__allergens-empty">
+                                        Nessun allergene dichiarato
+                                    </span>
+                                }
+
+                            </div>
+
+                            <button class="plate-card__add-button"
+                                    type="button"
+                                    aria-label="@($"Aggiungi {plate.Name} all'ordine")">
+
+                                Aggiungi
+                            </button>
+
+                        </div>
+
+                    </article>
+                }
+
+            </div>
+        }
+
+    </main>
+
 </div>
 
 @code {
@@ -67,16 +230,39 @@
 
     private List<Plate> plates = [];
     private string selectedCategory = AllCategory;
+    private bool isLoading = true;
+    private string? errorMessage;
 
-    private IEnumerable<string> Categorie =>
+    private IEnumerable<string> Categories =>
         plates
             .Select(plate => plate.Category)
             .Where(category => !string.IsNullOrWhiteSpace(category))
-            .Distinct(StringComparer.OrdinalIgnoreCase);
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(category => category);
+
+    private IEnumerable<Plate> FilteredPlates =>
+        IsCategorySelected(AllCategory)
+            ? plates
+            : plates.Where(plate =>
+                string.Equals(
+                    plate.Category,
+                    selectedCategory,
+                    StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {
-        plates = await PlateService.GetPlatesAsync();
+        try
+        {
+            plates = await PlateService.GetPlatesAsync();
+        }
+        catch (Exception exception)
+        {
+            errorMessage = $"Impossibile caricare il menu: {exception.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private void SelectCategory(string category)
@@ -99,5 +285,31 @@
         return IsCategorySelected(category)
             ? $"{baseClass} {baseClass}--active"
             : baseClass;
+    }
+
+    private static string GetPlateImageUrl(string? urlImage)
+    {
+        if (string.IsNullOrWhiteSpace(urlImage))
+        {
+            return string.Empty;
+        }
+
+        var normalizedPath = urlImage
+            .Replace('\\', '/')
+            .TrimStart('/');
+
+        if (normalizedPath.StartsWith(
+                "_content/",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return normalizedPath;
+        }
+
+        return $"_content/sushi-restaurant-project.Shared/{normalizedPath}";
+    }
+
+    private static string FormatPrice(decimal price)
+    {
+        return $"{price.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"))} €";
     }
 }
