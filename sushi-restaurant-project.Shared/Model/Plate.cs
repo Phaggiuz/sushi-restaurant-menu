@@ -7,6 +7,7 @@
         public string Category { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public string DetailedDescription { get; set; } = string.Empty;
         public string UrlImage { get; set; }
         public decimal Price { get; set; }
         public bool IsFrozen { get; set; }
