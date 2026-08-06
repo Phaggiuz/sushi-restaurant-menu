@@ -1,10 +1,10 @@
-@page "/"
+﻿@page "/"
 @using System.Globalization
 @using sushi_restaurant_project.Shared.Models
 @using sushi_restaurant_project.Shared.Services
 @inject IPlateService PlateService
 
-<div class="client-page">
+<div class="client-page @(isOrderOpen ? "client-page--order-open" : string.Empty)">
 
     <header class="customer-header">
         <div class="customer-header__container">
@@ -23,7 +23,10 @@
 
             <button class="customer-header__order-button"
                     type="button"
-                    aria-label="Visualizza ordine">
+                    aria-label="Visualizza ordine"
+                    aria-expanded="@isOrderOpen"
+                    aria-controls="order-drawer"
+                    @onclick="OpenOrder">
 
                 <svg class="customer-header__order-icon"
                      viewBox="0 0 24 24"
@@ -34,11 +37,287 @@
                     <path d="M9 12h6" />
                 </svg>
 
-                <span>Order</span>
+                <span>Ordine</span>
+
+                @if (OrderItemCount > 0)
+                {
+                    <span class="customer-header__order-count"
+                          aria-label="@($"{OrderItemCount} elementi nell'ordine")">
+
+                        @OrderItemCount
+                    </span>
+                }
             </button>
 
         </div>
     </header>
+
+    @if (isOrderOpen)
+    {
+        <div class="order-overlay"
+             @onclick="CloseOrder">
+
+            <aside id="order-drawer"
+                   class="order-drawer"
+                   role="dialog"
+                   aria-modal="true"
+                   aria-labelledby="order-drawer-title"
+                   @onclick:stopPropagation="true">
+
+                <header class="order-drawer__header">
+
+                    <h2 id="order-drawer-title"
+                        class="order-drawer__title">
+
+                        Il Tuo Ordine
+                    </h2>
+
+                    <button class="order-drawer__close-button"
+                            type="button"
+                            aria-label="Chiudi ordine"
+                            @onclick="CloseOrder">
+
+                        <span aria-hidden="true">×</span>
+                    </button>
+
+                </header>
+
+                <div class="order-drawer__configuration">
+
+                    <div class="order-drawer__fields">
+
+                        <div class="order-drawer__field">
+
+                            <label class="order-drawer__field-label"
+                                   for="order-table-number">
+                                Numero tavolo
+                            </label>
+
+                            <input id="order-table-number"
+                                   class="@GetOrderInputClass(HasInvalidTableNumber)"
+                                   type="text"
+                                   inputmode="numeric"
+                                   maxlength="2"
+                                   value="@tableNumberInput"
+                                   placeholder="1 - 99"
+                                   autocomplete="off"
+                                   aria-invalid="@HasInvalidTableNumber"
+                                   @oninput="OnTableNumberInput" />
+
+                            <span class="order-drawer__field-help">
+                                Inserisci un numero da 1 a 99.
+                            </span>
+
+                            @if (HasInvalidTableNumber)
+                            {
+                                <span class="order-drawer__validation-message">
+                                    Il tavolo deve essere compreso tra 1 e 99.
+                                </span>
+                            }
+
+                        </div>
+
+                        <div class="order-drawer__field">
+
+                            <label class="order-drawer__field-label"
+                                   for="order-people-count">
+                                Numero persone
+                            </label>
+
+                            <input id="order-people-count"
+                                   class="@GetOrderInputClass(HasInvalidPeopleCount)"
+                                   type="text"
+                                   inputmode="numeric"
+                                   maxlength="2"
+                                   value="@peopleCountInput"
+                                   placeholder="1 - 99"
+                                   autocomplete="off"
+                                   aria-invalid="@HasInvalidPeopleCount"
+                                   @oninput="OnPeopleCountInput" />
+
+                            <span class="order-drawer__field-help">
+                                Inserisci un numero da 1 a 99.
+                            </span>
+
+                            @if (HasInvalidPeopleCount)
+                            {
+                                <span class="order-drawer__validation-message">
+                                    Le persone devono essere comprese tra 1 e 99.
+                                </span>
+                            }
+
+                        </div>
+
+                    </div>
+
+                    <label class="order-drawer__ayce-option">
+
+                        <span class="order-drawer__ayce-content">
+
+                            <span class="order-drawer__ayce-title">
+                                All You Can Eat
+                            </span>
+
+                            <span class="order-drawer__ayce-description">
+                                14,90 € a persona. I prezzi dei singoli piatti non
+                                vengono conteggiati.
+                            </span>
+
+                        </span>
+
+                        <input class="order-drawer__ayce-input"
+                               type="checkbox"
+                               checked="@isAllYouCanEat"
+                               @onchange="OnAllYouCanEatChanged" />
+
+                        <span class="order-drawer__ayce-switch"
+                              aria-hidden="true">
+                        </span>
+
+                    </label>
+
+                </div>
+
+                <div class="order-drawer__content">
+
+                    @if (orderItems.Count == 0)
+                    {
+                        <div class="order-drawer__empty">
+                            Nessun Ordine
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="order-drawer__items">
+
+                            @foreach (var item in orderItems)
+                            {
+                                <article class="order-item"
+                                         @key="item.Plate.Id">
+
+                                    <img class="order-item__image"
+                                         src="@GetPlateImageUrl(item.Plate.UrlImage)"
+                                         alt="@item.Plate.Name" />
+
+                                    <div class="order-item__details">
+
+                                        <h3 class="order-item__name">
+                                            @item.Plate.Name
+                                        </h3>
+
+                                        <span class="order-item__price">
+                                            @FormatPrice(item.Plate.Price)
+                                        </span>
+
+                                    </div>
+
+                                    <div class="order-item__quantity-controls">
+
+                                        <button class="order-item__quantity-button"
+                                                type="button"
+                                                aria-label="@($"Diminuisci la quantità di {item.Plate.Name}")"
+                                                @onclick="() => DecreaseQuantity(item)">
+
+                                            <span aria-hidden="true">−</span>
+                                        </button>
+
+                                        <span class="order-item__quantity"
+                                              aria-label="@($"Quantità: {item.Quantity}")">
+
+                                            @item.Quantity
+                                        </span>
+
+                                        <button class="order-item__quantity-button"
+                                                type="button"
+                                                aria-label="@($"Aumenta la quantità di {item.Plate.Name}")"
+                                                @onclick="() => IncreaseQuantity(item)">
+
+                                            <span aria-hidden="true">+</span>
+                                        </button>
+
+                                    </div>
+
+                                </article>
+                            }
+
+                        </div>
+                    }
+
+                </div>
+
+                <footer class="order-drawer__summary">
+
+                    @if (isAllYouCanEat)
+                    {
+                        <div class="order-drawer__summary-row">
+
+                            <span>
+                                @AllYouCanEatSummaryLabel
+                            </span>
+
+                            <span>
+                                @FormatPrice(OrderAllYouCanEatAmount)
+                            </span>
+
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="order-drawer__summary-row">
+
+                            <span>Piatti</span>
+
+                            <span>
+                                @FormatPrice(OrderItemsSubtotal)
+                            </span>
+
+                        </div>
+                    }
+
+                    <div class="order-drawer__summary-row">
+
+                        <span>
+                            @CoverSummaryLabel
+                        </span>
+
+                        <span>
+                            @FormatPrice(OrderCoverAmount)
+                        </span>
+
+                    </div>
+
+
+                    <div class="order-drawer__summary-divider"></div>
+
+                    <div class="order-drawer__summary-row order-drawer__summary-row--total">
+
+                        <strong>Totale</strong>
+
+                        <strong>
+                            @FormatPrice(OrderTotal)
+                        </strong>
+
+                    </div>
+
+                    <button class="order-drawer__place-order-button"
+                            type="button"
+                            disabled="@(!CanPlaceOrder)"
+                            title="@PlaceOrderButtonTitle"
+                            @onclick="PlaceOrder">
+
+                        Ordina
+                    </button>
+
+                    <p class="order-drawer__summary-note">
+                        L'ordine verrà inviato direttamente alla cucina.
+                    </p>
+
+                </footer>
+
+            </aside>
+
+        </div>
+    }
 
     <section class="customer-hero">
         <img class="customer-hero__image"
@@ -191,7 +470,8 @@
 
                                     <button class="plate-card__add-button"
                                             type="button"
-                                            aria-label="@($"Aggiungi {plate.Name} all'ordine")">
+                                            aria-label="@($"Aggiungi {plate.Name} all'ordine")"
+                                            @onclick="@(() => AddToOrder(plate))">
 
                                         Aggiungi
                                     </button>
@@ -246,24 +526,289 @@
 
     <footer class="customer-footer">
         <p class="customer-footer__text">
-            UMI � INDIRIZZO � APERTO TUTTI I GIORNI 17:00 � 23:00
+            UMI — INDIRIZZO · APERTO TUTTI I GIORNI 17:00 — 23:00
         </p>
     </footer>
 </div>
 
 @code {
     private const string AllCategory = "All";
-
     private List<Plate> plates = [];
     private string selectedCategory = AllCategory;
     private bool isLoading = true;
     private string? errorMessage;
-
     private readonly HashSet<int> flippedPlateIds = [];
+    private readonly List<OrderItem> orderItems = [];
+    private bool isOrderOpen;
+    private string tableNumberInput = string.Empty;
+    private string peopleCountInput = string.Empty;
+    private bool isAllYouCanEat;
+    private readonly OrderState orderState = new();
+    private const decimal CoverChargePerPerson = 2.00m;
+    private const decimal AllYouCanEatPricePerPerson = 14.90m;
 
     private bool IsPlateFlipped(int plateId)
     {
         return flippedPlateIds.Contains(plateId);
+    }
+
+    private int OrderItemCount =>
+    orderItems.Sum(item => item.Quantity);
+
+    private bool HasValidTableNumber =>
+    TryParseNumberInRange(
+        tableNumberInput,
+        1,
+        99,
+        out _);
+
+    private bool HasInvalidTableNumber =>
+        !string.IsNullOrWhiteSpace(tableNumberInput)
+        && !HasValidTableNumber;
+
+    private bool HasValidPeopleCount =>
+        TryParseNumberInRange(
+            peopleCountInput,
+            1,
+            99,
+            out _);
+
+    private bool HasInvalidPeopleCount =>
+        !string.IsNullOrWhiteSpace(peopleCountInput)
+        && !HasValidPeopleCount;
+
+    private int PeopleCount =>
+        TryParseNumberInRange(
+            peopleCountInput,
+            1,
+            99,
+            out var peopleCount)
+            ? peopleCount
+            : 0;
+
+    private decimal OrderItemsSubtotal =>
+        orderItems.Sum(
+            item => item.Plate.Price * item.Quantity);
+
+    private decimal OrderCoverAmount =>
+        PeopleCount * CoverChargePerPerson;
+
+    private decimal OrderAllYouCanEatAmount =>
+        isAllYouCanEat
+            ? PeopleCount * AllYouCanEatPricePerPerson
+            : 0m;
+
+    private decimal OrderTotal =>
+        isAllYouCanEat
+            ? OrderAllYouCanEatAmount + OrderCoverAmount
+            : OrderItemsSubtotal + OrderCoverAmount;
+
+    private bool CanPlaceOrder =>
+        orderItems.Count > 0
+        && HasValidTableNumber
+        && HasValidPeopleCount;
+
+    private string CoverSummaryLabel =>
+        HasValidPeopleCount
+            ? $"Coperto ({PeopleCount} × {FormatPrice(CoverChargePerPerson)})"
+            : "Coperto";
+
+    private string AllYouCanEatSummaryLabel =>
+        HasValidPeopleCount
+            ? $"All You Can Eat ({PeopleCount} × {FormatPrice(AllYouCanEatPricePerPerson)})"
+            : "All You Can Eat";
+
+    private string PlaceOrderButtonTitle
+    {
+        get
+        {
+            if (orderItems.Count == 0)
+            {
+                return "Aggiungi almeno un piatto all'ordine.";
+            }
+
+            if (!HasValidTableNumber)
+            {
+                return "Seleziona un numero del tavolo da 1 a 99.";
+            }
+
+            if (!HasValidPeopleCount)
+            {
+                return "Seleziona il numero di persone da 1 a 99.";
+            }
+
+            return "Invia l'ordine alla cucina.";
+        }
+    }
+
+    private void OpenOrder()
+    {
+        isOrderOpen = true;
+    }
+
+    private void CloseOrder()
+    {
+        isOrderOpen = false;
+    }
+
+    private void AddToOrder(Plate plate)
+    {
+        var existingItem = orderItems.FirstOrDefault(
+            item => item.Plate.Id == plate.Id);
+
+        if (existingItem is null)
+        {
+            orderItems.Add(new OrderItem
+            {
+                Plate = plate,
+                Quantity = 1
+            });
+
+            SyncOrderState();
+            return;
+        }
+
+        existingItem.Quantity++;
+        SyncOrderState();
+    }
+
+    private static bool TryParseNumberInRange(
+    string value,
+    int minimum,
+    int maximum,
+    out int parsedValue)
+    {
+        return int.TryParse(
+                value,
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out parsedValue)
+            && parsedValue >= minimum
+            && parsedValue <= maximum;
+    }
+
+    private void IncreaseQuantity(OrderItem item)
+    {
+        item.Quantity++;
+        SyncOrderState();
+    }
+
+    private void DecreaseQuantity(OrderItem item)
+    {
+        if (item.Quantity > 1)
+        {
+            item.Quantity--;
+            SyncOrderState();
+            return;
+        }
+
+        orderItems.Remove(item);
+        SyncOrderState();
+    }
+
+    private static string GetOrderInputClass(bool isInvalid)
+    {
+        const string baseClass = "order-drawer__input";
+
+        return isInvalid
+            ? $"{baseClass} {baseClass}--invalid"
+            : baseClass;
+    }
+
+    private void OnTableNumberInput(ChangeEventArgs eventArgs)
+    {
+        tableNumberInput =
+            NormalizeNumericInput(eventArgs.Value?.ToString());
+
+        SyncOrderState();
+    }
+
+    private void OnPeopleCountInput(ChangeEventArgs eventArgs)
+    {
+        peopleCountInput =
+            NormalizeNumericInput(eventArgs.Value?.ToString());
+
+        SyncOrderState();
+    }
+
+    private void OnAllYouCanEatChanged(ChangeEventArgs eventArgs)
+    {
+        isAllYouCanEat =
+            eventArgs.Value is bool checkedValue
+            && checkedValue;
+
+        SyncOrderState();
+    }
+
+    private static string NormalizeNumericInput(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return new string(
+            value
+                .Where(char.IsDigit)
+                .Take(2)
+                .ToArray());
+    }
+
+    private void SyncOrderState()
+    {
+        var order = orderState.Order;
+
+        order.TableNumber =
+            TryParseNumberInRange(
+                tableNumberInput,
+                1,
+                99,
+                out var tableNumber)
+                ? tableNumber
+                : null;
+
+        order.PeopleCount =
+            TryParseNumberInRange(
+                peopleCountInput,
+                1,
+                99,
+                out var peopleCount)
+                ? peopleCount
+                : null;
+
+        order.IsAllYouCanEat = isAllYouCanEat;
+        order.Items = orderItems;
+        order.ItemsSubtotal = OrderItemsSubtotal;
+        order.CoverAmount = OrderCoverAmount;
+        order.AllYouCanEatAmount = OrderAllYouCanEatAmount;
+        order.TotalAmount = OrderTotal;
+    }
+
+    private void PlaceOrder()
+    {
+        if (!CanPlaceOrder)
+        {
+            return;
+        }
+
+        SyncOrderState();
+
+        var currentOrder = orderState.Order;
+
+        /*
+         * currentOrder contiene:
+         *
+         * - TableNumber
+         * - PeopleCount
+         * - IsAllYouCanEat
+         * - Items
+         * - ItemsSubtotal
+         * - CoverAmount
+         * - AllYouCanEatAmount
+         * - TotalAmount
+         *
+         * Qui verrà inserita la futura chiamata al servizio.
+         */
     }
 
     private void ShowPlateDetails(int plateId)
@@ -353,6 +898,7 @@
 
     private static string FormatPrice(decimal price)
     {
-        return $"{price.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"))} �";
+        return $"{price.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"))} €";
     }
+
 }
