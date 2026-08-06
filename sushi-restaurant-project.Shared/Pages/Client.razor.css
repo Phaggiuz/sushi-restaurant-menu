@@ -9,11 +9,16 @@
 }
 
 .customer-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
     width: 100%;
     height: 85px;
     flex-shrink: 0;
-    background: #090908;
+    background: rgba(9, 9, 8, 0.96);
     border-bottom: 1px solid rgba(211, 171, 111, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .customer-header__container {
@@ -84,16 +89,16 @@
     transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
-.customer-header__order-button:hover {
-    color: #edc98e;
-    background: #13110e;
-    border-color: #554734;
-}
+    .customer-header__order-button:hover {
+        color: #edc98e;
+        background: #13110e;
+        border-color: #554734;
+    }
 
-.customer-header__order-button:focus-visible {
-    outline: 2px solid #c99d64;
-    outline-offset: 3px;
-}
+    .customer-header__order-button:focus-visible {
+        outline: 2px solid #c99d64;
+        outline-offset: 3px;
+    }
 
 .customer-header__order-icon {
     width: 20px;
@@ -129,21 +134,21 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(
-        to bottom,
-        rgba(9, 9, 8, 0.08) 0%,
-        rgba(9, 9, 8, 0.2) 55%,
-        rgba(9, 9, 8, 0.85) 100%
-    );
+    background: linear-gradient( to bottom, rgba(9, 9, 8, 0.08) 0%, rgba(9, 9, 8, 0.2) 55%, rgba(9, 9, 8, 0.85) 100% );
 }
 
 /* Category navigation */
 
 .category-navigation {
+    position: sticky;
+    top: 85px;
+    z-index: 999;
     width: 100%;
     flex: 0 0 auto;
-    background: #090908;
+    background: rgba(9, 9, 8, 0.96);
     border-bottom: 1px solid #25211d;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .category-navigation__container {
@@ -164,9 +169,9 @@
     -webkit-overflow-scrolling: touch;
 }
 
-.category-navigation__container::-webkit-scrollbar {
-    display: none;
-}
+    .category-navigation__container::-webkit-scrollbar {
+        display: none;
+    }
 
 .category-navigation__item {
     flex: 0 0 auto;
@@ -184,14 +189,14 @@
     transition: color 160ms ease, background-color 160ms ease;
 }
 
-.category-navigation__item:hover {
-    color: #f1e7da;
-}
+    .category-navigation__item:hover {
+        color: #f1e7da;
+    }
 
-.category-navigation__item:focus-visible {
-    outline: 2px solid #c99d64;
-    outline-offset: 2px;
-}
+    .category-navigation__item:focus-visible {
+        outline: 2px solid #c99d64;
+        outline-offset: 2px;
+    }
 
 .category-navigation__item--active {
     padding-inline: 24px;
@@ -199,10 +204,10 @@
     background: #d78264;
 }
 
-.category-navigation__item--active:hover {
-    color: #fff7ef;
-    background: #df8c6d;
-}
+    .category-navigation__item--active:hover {
+        color: #fff7ef;
+        background: #df8c6d;
+    }
 
 /* Tablet */
 
@@ -254,6 +259,10 @@
 
     .customer-hero {
         height: 180px;
+    }
+
+    .category-navigation {
+        top: 70px;
     }
 
     .category-navigation__container {
@@ -308,8 +317,7 @@
     }
 }
 
-/*CSS per le card*/
-
+/* Menu */
 
 .menu-section {
     width: 100%;
@@ -353,26 +361,99 @@
     color: #df8c6d;
 }
 
-/* Card */
+/* Card flip container */
 
 .plate-card {
+    position: relative;
     width: 100%;
     min-width: 0;
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    background: #12100b;
-    border: 1px solid #272219;
+    display: block;
     border-radius: 1.25rem;
-    transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+    perspective: 1200px;
+    transition: transform 220ms ease;
 }
 
     .plate-card:hover {
         transform: translateY(-3px);
-        border-color: #3d3428;
-        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
     }
+
+.plate-card__inner {
+    position: relative;
+    width: 100%;
+    display: grid;
+    border-radius: inherit;
+    transform-style: preserve-3d;
+    transition: transform 550ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.plate-card--flipped .plate-card__inner {
+    transform: rotateY(180deg);
+}
+
+/* Facce della card */
+
+.plate-card__face {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: #12100b;
+    border: 1px solid #272219;
+    border-radius: inherit;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.plate-card:hover .plate-card__face {
+    border-color: #3d3428;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+}
+
+/* Fronte */
+
+.plate-card__front {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transform: rotateY(0deg);
+}
+
+.plate-card--flipped .plate-card__front {
+    pointer-events: none;
+}
+
+/* Retro */
+
+.plate-card__back {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding: 2rem;
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    color: #f4eee4;
+    background: #12100b;
+    font: inherit;
+    text-align: left;
+    transform: rotateY(180deg);
+    cursor: pointer;
+    overflow-x: hidden;
+    overflow-y: auto;
+    pointer-events: none;
+}
+
+.plate-card--flipped .plate-card__back {
+    pointer-events: auto;
+}
+
+.plate-card__back:focus-visible {
+    outline: 2px solid #c99d64;
+    outline-offset: -5px;
+}
 
 /* Immagine */
 
@@ -395,14 +476,17 @@
     transition: transform 350ms ease;
 }
 
-.plate-card:hover .plate-card__image {
+.plate-card:not(.plate-card--flipped):hover .plate-card__image {
     transform: scale(1.045);
 }
+
+/* Bollino surgelato */
 
 .plate-card__frozen-badge {
     position: absolute;
     top: 14px;
     right: 14px;
+    z-index: 2;
     padding: 7px 11px;
     color: #f4eee4;
     background: rgba(42, 73, 91, 0.92);
@@ -415,6 +499,51 @@
     letter-spacing: 0.7px;
     text-transform: uppercase;
 }
+
+/* Information point */
+
+.plate-card__info-button {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 3;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #f4eee4;
+    background: rgba(9, 9, 8, 0.82);
+    border: 1px solid rgba(244, 238, 228, 0.65);
+    border-radius: 50%;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-style: italic;
+    line-height: 1;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+    .plate-card__info-button:hover {
+        color: #12100b;
+        background: #e3c08c;
+        border-color: #e3c08c;
+        transform: scale(1.08);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+    }
+
+    .plate-card__info-button:active {
+        transform: scale(0.96);
+    }
+
+    .plate-card__info-button:focus-visible {
+        outline: 2px solid #efb092;
+        outline-offset: 3px;
+    }
 
 /* Contenuto */
 
@@ -566,7 +695,7 @@
     line-height: 1.4;
 }
 
-/* Pulsante */
+/* Pulsante aggiungi */
 
 .plate-card__add-button {
     width: 100%;
@@ -602,6 +731,85 @@
     box-shadow: 0 0 0 4px rgba(207, 121, 88, 0.2);
 }
 
+/* Contenuto retro card */
+
+.plate-card__back-category {
+    display: block;
+    margin-bottom: 0.55rem;
+    color: #a98562;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+.plate-card__back-name {
+    display: block;
+    color: #eadabd;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.plate-card__back-divider {
+    width: 46px;
+    height: 1px;
+    margin: 1.25rem 0;
+    flex: 0 0 auto;
+    background: #a98562;
+}
+
+.plate-card__detailed-description {
+    min-width: 0;
+    flex: 1 1 auto;
+    color: #a69b8e;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.plate-card__back-hint {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    flex: 0 0 auto;
+    color: #6f675d;
+    border-top: 1px solid #272219;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.64rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.8px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* Scrollbar retro card */
+
+.plate-card__back {
+    scrollbar-width: thin;
+    scrollbar-color: #4a3d2f transparent;
+}
+
+    .plate-card__back::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .plate-card__back::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .plate-card__back::-webkit-scrollbar-thumb {
+        background: #4a3d2f;
+        border-radius: 999px;
+    }
+
 /* Tablet */
 
 @media (max-width: 1000px) {
@@ -613,6 +821,10 @@
 
     .plate-card__image-container {
         height: clamp(12rem, 27vw, 15rem);
+    }
+
+    .plate-card__back {
+        padding: 1.7rem;
     }
 }
 
@@ -646,6 +858,32 @@
     .plate-card__details {
         gap: 0.6rem;
     }
+
+    .plate-card__info-button {
+        top: 12px;
+        left: 12px;
+        width: 36px;
+        height: 36px;
+        font-size: 1.15rem;
+    }
+
+    .plate-card__frozen-badge {
+        top: 12px;
+        right: 12px;
+    }
+
+    .plate-card__back {
+        padding: 1.4rem;
+    }
+
+    .plate-card__back-name {
+        font-size: 1.3rem;
+    }
+
+    .plate-card__detailed-description {
+        font-size: 0.85rem;
+        line-height: 1.55;
+    }
 }
 
 /* Telefoni molto stretti */
@@ -673,5 +911,17 @@
 
     .plate-card__detail:last-child {
         grid-column: 1 / -1;
+    }
+
+    .plate-card__back {
+        padding: 1.2rem;
+    }
+
+    .plate-card__back-divider {
+        margin: 1rem 0;
+    }
+
+    .plate-card__back-hint {
+        margin-top: 1rem;
     }
 }

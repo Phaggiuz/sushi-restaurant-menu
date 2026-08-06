@@ -99,91 +99,146 @@
 
                 @foreach (var plate in FilteredPlates)
                 {
-                    <article class="plate-card"
+                    <article class="plate-card @(IsPlateFlipped(plate.Id)
+                                                            ? "plate-card--flipped"
+                                                            : string.Empty)"
                              @key="plate.Id">
 
-                        <div class="plate-card__image-container">
+                        <div class="plate-card__inner">
 
-                            <img class="plate-card__image"
-                                 src="@GetPlateImageUrl(plate.UrlImage)"
-                                 alt="@plate.Name"
-                                 loading="lazy" />
+                            @* FRONTE DELLA CARD *@
+                            <div class="plate-card__face plate-card__front">
 
-                            @if (plate.IsFrozen)
-                            {
-                                <span class="plate-card__frozen-badge">
-                                    Surgelato
-                                </span>
-                            }
+                                <div class="plate-card__image-container">
 
-                        </div>
+                                    <img class="plate-card__image"
+                                         src="@GetPlateImageUrl(plate.UrlImage)"
+                                         alt="@plate.Name"
+                                         loading="lazy" />
 
-                        <div class="plate-card__content">
+                                    @if (plate.IsFrozen)
+                                    {
+                                        <span class="plate-card__frozen-badge">
+                                            Surgelato
+                                        </span>
+                                    }
 
-                            <div class="plate-card__header">
+                                    <button class="plate-card__info-button"
+                                            type="button"
+                                            aria-label="@($"Mostra maggiori informazioni su {plate.Name}")"
+                                            title="Maggiori informazioni"
+                                            @onclick="@(() => ShowPlateDetails(plate.Id))"
+                                            @onclick:stopPropagation="true">
 
-                                <div class="plate-card__title-container">
-
-                                    <span class="plate-card__category">
-                                        @plate.Category
-                                    </span>
-
-                                    <h2 class="plate-card__name">
-                                        @plate.Name
-                                    </h2>
+                                        <span aria-hidden="true">i</span>
+                                    </button>
 
                                 </div>
 
-                                <div class="plate-card__price">
-                                    @FormatPrice(plate.Price)
-                                </div>
+                                <div class="plate-card__content">
 
-                            </div>
+                                    <div class="plate-card__header">
 
-                            <p class="plate-card__description">
-                                @plate.Description
-                            </p>
+                                        <div class="plate-card__title-container">
 
-                            <div class="plate-card__allergens">
+                                            <span class="plate-card__category">
+                                                @plate.Category
+                                            </span>
 
-                                <span class="plate-card__allergens-title">
-                                    Allergeni
-                                </span>
+                                            <h2 class="plate-card__name">
+                                                @plate.Name
+                                            </h2>
 
-                                @if (plate.Allergens?.Any() == true)
-                                {
-                                    <div class="plate-card__allergens-list">
+                                        </div>
 
-                                        @foreach (var allergen in plate.Allergens)
+                                        <div class="plate-card__price">
+                                            @FormatPrice(plate.Price)
+                                        </div>
+
+                                    </div>
+
+                                    <p class="plate-card__description">
+                                        @plate.Description
+                                    </p>
+
+                                    <div class="plate-card__allergens">
+
+                                        <span class="plate-card__allergens-title">
+                                            Allergeni
+                                        </span>
+
+                                        @if (plate.Allergens?.Any() == true)
                                         {
-                                            <span class="plate-card__allergen">
-                                                @allergen
+                                            <div class="plate-card__allergens-list">
+
+                                                @foreach (var allergen in plate.Allergens)
+                                                {
+                                                    <span class="plate-card__allergen">
+                                                        @allergen
+                                                    </span>
+                                                }
+
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="plate-card__allergens-empty">
+                                                Nessun allergene dichiarato
                                             </span>
                                         }
 
                                     </div>
-                                }
-                                else
-                                {
-                                    <span class="plate-card__allergens-empty">
-                                        Nessun allergene dichiarato
-                                    </span>
-                                }
+
+                                    <button class="plate-card__add-button"
+                                            type="button"
+                                            aria-label="@($"Aggiungi {plate.Name} all'ordine")">
+
+                                        Aggiungi
+                                    </button>
+
+                                </div>
 
                             </div>
 
-                            <button class="plate-card__add-button"
+                            @* RETRO DELLA CARD *@
+                            <button class="plate-card__face plate-card__back"
                                     type="button"
-                                    aria-label="@($"Aggiungi {plate.Name} all'ordine")">
+                                    aria-label="@($"Torna alle informazioni principali di {plate.Name}")"
+                                    @onclick="@(() => HidePlateDetails(plate.Id))">
 
-                                Aggiungi
+                                <span class="plate-card__back-category">
+                                    @plate.Category
+                                </span>
+
+                                <span class="plate-card__back-name">
+                                    @plate.Name
+                                </span>
+
+                                <span class="plate-card__back-divider"
+                                      aria-hidden="true">
+                                </span>
+
+                                <span class="plate-card__detailed-description">
+                                    @if (string.IsNullOrWhiteSpace(plate.DetailedDescription))
+                                    {
+                                        @plate.Description
+                                    }
+                                    else
+                                    {
+                                        @plate.DetailedDescription
+                                    }
+                                </span>
+
+                                <span class="plate-card__back-hint">
+                                    Clicca sulla card per tornare al piatto
+                                </span>
+
                             </button>
 
                         </div>
 
                     </article>
                 }
-
             </div>
         }
 
@@ -198,6 +253,23 @@
     private string selectedCategory = AllCategory;
     private bool isLoading = true;
     private string? errorMessage;
+
+    private readonly HashSet<int> flippedPlateIds = [];
+
+    private bool IsPlateFlipped(int plateId)
+    {
+        return flippedPlateIds.Contains(plateId);
+    }
+
+    private void ShowPlateDetails(int plateId)
+    {
+        flippedPlateIds.Add(plateId);
+    }
+
+    private void HidePlateDetails(int plateId)
+    {
+        flippedPlateIds.Remove(plateId);
+    }
 
     private IEnumerable<string> Categories =>
         plates
