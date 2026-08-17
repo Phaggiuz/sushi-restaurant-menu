@@ -533,39 +533,79 @@
 
 @code {
     private const string AllCategory = "All";
+
+    // Dati del menu caricati tramite PlateService.
+    // La lista completa viene mantenuta in memoria e filtrata lato componente
+    // in base alla categoria selezionata dall'utente.
     private List<Plate> plates = [];
+
     private string selectedCategory = AllCategory;
     private bool isLoading = true;
     private string? errorMessage;
+
+    // Contiene gli ID dei piatti la cui card è attualmente visualizzata sul retro.
+    // L'uso di un HashSet consente di gestire indipendentemente il flip di ogni card.
     private readonly HashSet<int> flippedPlateIds = [];
+
+    // Rappresenta gli articoli presenti nel carrello visualizzato nel drawer.
     private readonly List<OrderItem> orderItems = [];
+
     private bool isOrderOpen;
+
+    // Tavolo e numero di persone vengono mantenuti come stringhe perché sono
+    // direttamente collegati agli input della UI. La conversione numerica viene
+    // effettuata solo dopo averne verificato la validità.
     private string tableNumberInput = string.Empty;
     private string peopleCountInput = string.Empty;
+
     private bool isAllYouCanEat;
+
+    // OrderState mantiene la rappresentazione completa dell'ordine corrente.
+    // Viene sincronizzato con lo stato della UI ogni volta che cambiano
+    // configurazione dell'ordine, quantità o contenuto del carrello.
     private readonly OrderState orderState = new();
+
+    // Tariffe attualmente definite lato client.
+    // Potranno essere sostituite in futuro da valori provenienti da un servizio.
     private const decimal CoverChargePerPerson = 2.00m;
     private const decimal AllYouCanEatPricePerPerson = 14.90m;
 
+    /// <summary>
+    /// Verifica se la card del piatto specificato è attualmente visualizzata sul retro.
+    /// </summary>
     private bool IsPlateFlipped(int plateId)
     {
         return flippedPlateIds.Contains(plateId);
     }
 
+    /// <summary>
+    /// Numero complessivo di piatti presenti nell'ordine.
+    /// Tiene conto delle quantità e non solamente del numero di righe.
+    /// </summary>
     private int OrderItemCount =>
-    orderItems.Sum(item => item.Quantity);
+        orderItems.Sum(item => item.Quantity);
 
+    /// <summary>
+    /// Il numero del tavolo è valido solamente se compreso tra 1 e 99.
+    /// Il valore zero non identifica quindi un tavolo valido.
+    /// </summary>
     private bool HasValidTableNumber =>
-    TryParseNumberInRange(
-        tableNumberInput,
-        1,
-        99,
-        out _);
+        TryParseNumberInRange(
+            tableNumberInput,
+            1,
+            99,
+            out _);
 
+    // L'errore viene mostrato solamente dopo che l'utente ha inserito un valore.
+    // Un campo vuoto resta invalido ai fini dell'ordine, ma non viene evidenziato
+    // immediatamente come errore nella UI.
     private bool HasInvalidTableNumber =>
         !string.IsNullOrWhiteSpace(tableNumberInput)
         && !HasValidTableNumber;
 
+    /// <summary>
+    /// Il numero di persone è obbligatorio e deve essere compreso tra 1 e 99.
+    /// </summary>
     private bool HasValidPeopleCount =>
         TryParseNumberInRange(
             peopleCountInput,
@@ -577,6 +617,10 @@
         !string.IsNullOrWhiteSpace(peopleCountInput)
         && !HasValidPeopleCount;
 
+    /// <summary>
+    /// Restituisce il numero di persone valido oppure zero se il campo
+    /// non contiene ancora un valore utilizzabile.
+    /// </summary>
     private int PeopleCount =>
         TryParseNumberInRange(
             peopleCountInput,
@@ -586,23 +630,51 @@
             ? peopleCount
             : 0;
 
+    /// <summary>
+    /// Totale dei prezzi dei singoli piatti presenti nell'ordine.
+    /// Questo valore viene comunque mantenuto nell'OrderState anche quando
+    /// è attiva la modalità All You Can Eat.
+    /// </summary>
     private decimal OrderItemsSubtotal =>
         orderItems.Sum(
             item => item.Plate.Price * item.Quantity);
 
+    /// <summary>
+    /// Il coperto viene calcolato per persona indipendentemente dalla
+    /// modalità normale o All You Can Eat.
+    /// </summary>
     private decimal OrderCoverAmount =>
         PeopleCount * CoverChargePerPerson;
 
+    /// <summary>
+    /// Importo All You Can Eat calcolato per persona.
+    /// Se la modalità non è attiva, l'importo è zero.
+    /// </summary>
     private decimal OrderAllYouCanEatAmount =>
         isAllYouCanEat
             ? PeopleCount * AllYouCanEatPricePerPerson
             : 0m;
 
+    /// <summary>
+    /// Calcola il totale applicando la regola economica dell'ordine.
+    ///
+    /// Modalità standard:
+    ///     piatti + coperto.
+    ///
+    /// Modalità All You Can Eat:
+    ///     quota AYCE per persona + coperto.
+    ///
+    /// In modalità AYCE i prezzi dei singoli piatti non concorrono al totale.
+    /// </summary>
     private decimal OrderTotal =>
         isAllYouCanEat
             ? OrderAllYouCanEatAmount + OrderCoverAmount
             : OrderItemsSubtotal + OrderCoverAmount;
 
+    /// <summary>
+    /// L'ordine può essere inviato solamente se contiene almeno un piatto
+    /// e sono stati specificati tavolo e numero di persone validi.
+    /// </summary>
     private bool CanPlaceOrder =>
         orderItems.Count > 0
         && HasValidTableNumber
@@ -618,6 +690,11 @@
             ? $"All You Can Eat ({PeopleCount} × {FormatPrice(AllYouCanEatPricePerPerson)})"
             : "All You Can Eat";
 
+    /// <summary>
+    /// Fornisce alla UI la motivazione per cui il pulsante "Ordina"
+    /// è disabilitato. Le condizioni seguono lo stesso ordine logico
+    /// utilizzato per stabilire se l'ordine può essere inviato.
+    /// </summary>
     private string PlaceOrderButtonTitle
     {
         get
@@ -651,6 +728,11 @@
         isOrderOpen = false;
     }
 
+    /// <summary>
+    /// Aggiunge un piatto all'ordine.
+    /// Se il piatto è già presente viene incrementata la quantità della
+    /// riga esistente, evitando di creare righe duplicate per lo stesso piatto.
+    /// </summary>
     private void AddToOrder(Plate plate)
     {
         var existingItem = orderItems.FirstOrDefault(
@@ -672,11 +754,15 @@
         SyncOrderState();
     }
 
+    /// <summary>
+    /// Converte un valore testuale in intero verificando contestualmente
+    /// che appartenga all'intervallo consentito.
+    /// </summary>
     private static bool TryParseNumberInRange(
-    string value,
-    int minimum,
-    int maximum,
-    out int parsedValue)
+        string value,
+        int minimum,
+        int maximum,
+        out int parsedValue)
     {
         return int.TryParse(
                 value,
@@ -693,6 +779,11 @@
         SyncOrderState();
     }
 
+    /// <summary>
+    /// Diminuisce la quantità del piatto.
+    /// Quando la quantità corrente è uno, la riga viene rimossa
+    /// completamente dall'ordine invece di raggiungere quantità zero.
+    /// </summary>
     private void DecreaseQuantity(OrderItem item)
     {
         if (item.Quantity > 1)
@@ -706,6 +797,9 @@
         SyncOrderState();
     }
 
+    /// <summary>
+    /// Applica all'input la classe di validazione prevista dal drawer ordine.
+    /// </summary>
     private static string GetOrderInputClass(bool isInvalid)
     {
         const string baseClass = "order-drawer__input";
@@ -740,6 +834,11 @@
         SyncOrderState();
     }
 
+    /// <summary>
+    /// Normalizza gli input numerici di tavolo e persone:
+    /// mantiene solamente le cifre e limita l'input a due caratteri,
+    /// coerentemente con l'intervallo 1-99 previsto dalla UI.
+    /// </summary>
     private static string NormalizeNumericInput(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -754,6 +853,17 @@
                 .ToArray());
     }
 
+    /// <summary>
+    /// Sincronizza lo stato visualizzato dal componente con l'Order
+    /// mantenuto nell'OrderState.
+    ///
+    /// Questo metodo costituisce il punto centrale di aggiornamento
+    /// dell'ordine: deve essere richiamato ogni volta che cambiano
+    /// tavolo, persone, modalità AYCE, contenuto o quantità dei piatti.
+    ///
+    /// I valori numerici non validi vengono rappresentati nell'Order
+    /// come null invece di propagare dati non utilizzabili.
+    /// </summary>
     private void SyncOrderState()
     {
         var order = orderState.Order;
@@ -778,12 +888,22 @@
 
         order.IsAllYouCanEat = isAllYouCanEat;
         order.Items = orderItems;
+
+        // ItemsSubtotal viene mantenuto anche in modalità AYCE.
+        // La decisione di ignorarlo nel totale viene applicata esclusivamente
+        // dal calcolo di OrderTotal.
         order.ItemsSubtotal = OrderItemsSubtotal;
+
         order.CoverAmount = OrderCoverAmount;
         order.AllYouCanEatAmount = OrderAllYouCanEatAmount;
         order.TotalAmount = OrderTotal;
     }
 
+    /// <summary>
+    /// Prepara l'ordine corrente per il futuro invio alla cucina.
+    /// L'invio viene impedito se le condizioni minime definite da
+    /// CanPlaceOrder non sono soddisfatte.
+    /// </summary>
     private void PlaceOrder()
     {
         if (!CanPlaceOrder)
@@ -791,12 +911,16 @@
             return;
         }
 
+        // Forziamo un'ultima sincronizzazione prima di utilizzare OrderState,
+        // in modo che il futuro servizio riceva sempre lo stato corrente della UI.
         SyncOrderState();
 
         var currentOrder = orderState.Order;
 
         /*
-         * currentOrder contiene:
+         * Punto di integrazione previsto per il futuro servizio di invio ordine.
+         *
+         * currentOrder contiene attualmente:
          *
          * - TableNumber
          * - PeopleCount
@@ -807,20 +931,33 @@
          * - AllYouCanEatAmount
          * - TotalAmount
          *
-         * Qui verrà inserita la futura chiamata al servizio.
+         * In modalità All You Can Eat i piatti rimangono presenti nell'ordine,
+         * ma il relativo ItemsSubtotal non viene utilizzato per calcolare
+         * TotalAmount.
          */
     }
 
+    /// <summary>
+    /// Mostra il retro della card contenente la descrizione dettagliata.
+    /// </summary>
     private void ShowPlateDetails(int plateId)
     {
         flippedPlateIds.Add(plateId);
     }
 
+    /// <summary>
+    /// Riporta la card alla visualizzazione principale.
+    /// </summary>
     private void HidePlateDetails(int plateId)
     {
         flippedPlateIds.Remove(plateId);
     }
 
+    /// <summary>
+    /// Elenco delle categorie effettivamente presenti nei piatti caricati.
+    /// Valori vuoti vengono ignorati e i duplicati vengono eliminati
+    /// senza distinguere tra maiuscole e minuscole.
+    /// </summary>
     private IEnumerable<string> Categories =>
         plates
             .Select(plate => plate.Category)
@@ -828,6 +965,11 @@
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(category => category);
 
+    /// <summary>
+    /// Piatti da visualizzare in base alla categoria selezionata.
+    /// La categoria "All" non appartiene necessariamente ai dati:
+    /// rappresenta il filtro speciale che mostra l'intero menu.
+    /// </summary>
     private IEnumerable<Plate> FilteredPlates =>
         IsCategorySelected(AllCategory)
             ? plates
@@ -837,6 +979,11 @@
                     selectedCategory,
                     StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>
+    /// Carica il menu all'inizializzazione del componente.
+    /// Eventuali errori vengono intercettati e mostrati direttamente
+    /// nella sezione dedicata della pagina.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         try
@@ -849,6 +996,9 @@
         }
         finally
         {
+            // Il caricamento deve terminare sia in caso di successo
+            // sia in caso di errore, per evitare di lasciare la UI
+            // permanentemente nello stato "Caricamento menu...".
             isLoading = false;
         }
     }
@@ -866,6 +1016,10 @@
             StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Restituisce la classe CSS della categoria aggiungendo lo stato
+    /// "active" solamente all'elemento attualmente selezionato.
+    /// </summary>
     private string GetCategoryClass(string category)
     {
         const string baseClass = "category-navigation__item";
@@ -875,6 +1029,13 @@
             : baseClass;
     }
 
+    /// <summary>
+    /// Normalizza il percorso dell'immagine del piatto.
+    ///
+    /// Se il percorso è già un URL "_content/" viene utilizzato così com'è;
+    /// in caso contrario viene considerato relativo alla libreria Shared
+    /// del progetto.
+    /// </summary>
     private static string GetPlateImageUrl(string? urlImage)
     {
         if (string.IsNullOrWhiteSpace(urlImage))
@@ -896,9 +1057,12 @@
         return $"_content/sushi-restaurant-project.Shared/{normalizedPath}";
     }
 
+    /// <summary>
+    /// Formatta gli importi utilizzando la convenzione italiana
+    /// e aggiunge il simbolo dell'euro.
+    /// </summary>
     private static string FormatPrice(decimal price)
     {
         return $"{price.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"))} €";
     }
-
 }
