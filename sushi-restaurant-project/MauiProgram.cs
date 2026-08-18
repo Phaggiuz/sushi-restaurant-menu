@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using sushi_restaurant_project.Services;
-using sushi_restaurant_project.Shared.Services;
 using Microsoft.Maui.Storage;
+using sushi_restaurant_project.Services;
 using sushi_restaurant_project.Shared.Database;
+using sushi_restaurant_project.Shared.Models;
+using sushi_restaurant_project.Shared.Services;
 
 namespace sushi_restaurant_project
 {
@@ -30,6 +31,7 @@ namespace sushi_restaurant_project
             });
             builder.Services.AddSingleton<DatabaseSeeder>();
             builder.Services.AddSingleton<IPlateService, PlateService>();
+            builder.Services.AddScoped<OrderState>();
             builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG

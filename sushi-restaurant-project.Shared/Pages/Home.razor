@@ -1,0 +1,325 @@
+﻿@page "/"
+@using sushi_restaurant_project.Shared.Models
+@inject OrderState OrderState
+@inject NavigationManager NavigationManager
+
+<PageTitle>Umi — Omakase & Sushi Bar</PageTitle>
+
+<div class="home-page @(isReservationModalOpen ? "home-page--modal-open" : string.Empty)">
+
+    <main class="home-hero">
+
+        <img class="home-hero__image"
+             src="_content/sushi-restaurant-project.Shared/image/sushi-hero.png"
+             alt="Selezione di sushi preparata dal ristorante" />
+
+        <div class="home-hero__overlay"
+             aria-hidden="true">
+        </div>
+
+        <div class="home-hero__content">
+
+            <span class="home-hero__eyebrow">
+                OMAKASE · SUSHI BAR
+            </span>
+
+            <h1 class="home-hero__title">
+                Umi
+            </h1>
+
+            <div class="home-hero__subtitle">
+                <span lang="ja">海</span>
+                <span class="home-hero__subtitle-line"></span>
+                <span>the sea</span>
+            </div>
+
+            <p class="home-hero__description">
+                Un sushi bar dedicato alla semplicità,
+                alla qualità degli ingredienti e alla cura di ogni dettaglio.
+            </p>
+
+            <div class="home-hero__actions">
+
+                <button class="home-hero__button home-hero__button--primary"
+                        type="button"
+                        @onclick="ExploreMenu">
+
+                    Esplora il menu
+                </button>
+
+                <button class="home-hero__button home-hero__button--secondary"
+                        type="button"
+                        @onclick="OpenReservationModal">
+
+                    Riserva il tavolo
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    @if (isReservationModalOpen)
+    {
+        <div class="reservation-modal-overlay"
+             @onclick="CloseReservationModal">
+
+            <section class="reservation-modal"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="reservation-modal-title"
+                     @onclick:stopPropagation="true">
+
+                <button class="reservation-modal__close"
+                        type="button"
+                        aria-label="Chiudi"
+                        @onclick="CloseReservationModal">
+
+                    <span aria-hidden="true">×</span>
+                </button>
+
+                <header class="reservation-modal__header">
+
+                    <span class="reservation-modal__eyebrow">
+                        UMI
+                    </span>
+
+                    <h2 id="reservation-modal-title"
+                        class="reservation-modal__title">
+
+                        Prenota il tuo tavolo
+                    </h2>
+
+                    <p class="reservation-modal__description">
+                        Inserisci i dati del tavolo prima di accedere al menu.
+                    </p>
+
+                </header>
+
+                <div class="reservation-modal__fields">
+
+                    <div class="reservation-modal__field">
+
+                        <label class="reservation-modal__label"
+                               for="reservation-table">
+
+                            Numero tavolo
+                        </label>
+
+                        <input id="reservation-table"
+                               class="@GetInputClass(ShowTableError)"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="2"
+                               value="@tableNumberInput"
+                               placeholder="1 - 99"
+                               autocomplete="off"
+                               aria-invalid="@ShowTableError"
+                               @oninput="OnTableNumberInput" />
+
+                        @if (ShowTableError)
+                        {
+                            <span class="reservation-modal__validation">
+                                Il tavolo deve essere compreso tra 1 e 99.
+                            </span>
+                        }
+
+                    </div>
+
+                    <div class="reservation-modal__field">
+
+                        <label class="reservation-modal__label"
+                               for="reservation-people">
+
+                            Numero persone
+                        </label>
+
+                        <input id="reservation-people"
+                               class="@GetInputClass(ShowPeopleError)"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="2"
+                               value="@peopleCountInput"
+                               placeholder="1 - 99"
+                               autocomplete="off"
+                               aria-invalid="@ShowPeopleError"
+                               @oninput="OnPeopleCountInput" />
+
+                        @if (ShowPeopleError)
+                        {
+                            <span class="reservation-modal__validation">
+                                Il numero di persone deve essere compreso tra 1 e 99.
+                            </span>
+                        }
+
+                    </div>
+
+                </div>
+
+                <div class="reservation-modal__actions">
+
+                    <button class="reservation-modal__button reservation-modal__button--secondary"
+                            type="button"
+                            @onclick="CloseReservationModal">
+
+                        Annulla
+                    </button>
+
+                    <button class="reservation-modal__button reservation-modal__button--primary"
+                            type="button"
+                            @onclick="ConfirmReservation">
+
+                        Conferma
+                    </button>
+
+                </div>
+
+            </section>
+
+        </div>
+    }
+
+</div>
+
+@code {
+    private bool isReservationModalOpen;
+    private bool reservationSubmitted;
+
+    private string tableNumberInput = string.Empty;
+    private string peopleCountInput = string.Empty;
+
+    private bool HasStoredReservation =>
+        OrderState.Order.TableNumber is >= 1 and <= 99
+        && OrderState.Order.PeopleCount is >= 1 and <= 99;
+
+    private bool HasValidTableNumber =>
+        TryParseNumberInRange(
+            tableNumberInput,
+            1,
+            99,
+            out _);
+
+    private bool HasValidPeopleCount =>
+        TryParseNumberInRange(
+            peopleCountInput,
+            1,
+            99,
+            out _);
+
+    private bool ShowTableError =>
+        (reservationSubmitted || !string.IsNullOrWhiteSpace(tableNumberInput))
+        && !HasValidTableNumber;
+
+    private bool ShowPeopleError =>
+        (reservationSubmitted || !string.IsNullOrWhiteSpace(peopleCountInput))
+        && !HasValidPeopleCount;
+
+    protected override void OnInitialized()
+    {
+        if (OrderState.Order.TableNumber is int tableNumber)
+        {
+            tableNumberInput = tableNumber.ToString();
+        }
+
+        if (OrderState.Order.PeopleCount is int peopleCount)
+        {
+            peopleCountInput = peopleCount.ToString();
+        }
+    }
+
+    private void ExploreMenu()
+    {
+        if (HasStoredReservation)
+        {
+            NavigationManager.NavigateTo("/client");
+            return;
+        }
+
+        OpenReservationModal();
+    }
+
+    private void OpenReservationModal()
+    {
+        reservationSubmitted = false;
+        isReservationModalOpen = true;
+    }
+
+    private void CloseReservationModal()
+    {
+        reservationSubmitted = false;
+        isReservationModalOpen = false;
+    }
+
+    private void ConfirmReservation()
+    {
+        reservationSubmitted = true;
+
+        if (!TryParseNumberInRange(
+                tableNumberInput,
+                1,
+                99,
+                out var tableNumber)
+            || !TryParseNumberInRange(
+                peopleCountInput,
+                1,
+                99,
+                out var peopleCount))
+        {
+            return;
+        }
+
+        OrderState.Order.TableNumber = tableNumber;
+        OrderState.Order.PeopleCount = peopleCount;
+
+        isReservationModalOpen = false;
+
+        NavigationManager.NavigateTo("/client");
+    }
+
+    private void OnTableNumberInput(ChangeEventArgs eventArgs)
+    {
+        tableNumberInput =
+            NormalizeNumericInput(eventArgs.Value?.ToString());
+    }
+
+    private void OnPeopleCountInput(ChangeEventArgs eventArgs)
+    {
+        peopleCountInput =
+            NormalizeNumericInput(eventArgs.Value?.ToString());
+    }
+
+    private static bool TryParseNumberInRange(
+        string value,
+        int minimum,
+        int maximum,
+        out int parsedValue)
+    {
+        return int.TryParse(value, out parsedValue)
+            && parsedValue >= minimum
+            && parsedValue <= maximum;
+    }
+
+    private static string NormalizeNumericInput(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return new string(
+            value
+                .Where(char.IsDigit)
+                .Take(2)
+                .ToArray());
+    }
+
+    private static string GetInputClass(bool isInvalid)
+    {
+        const string baseClass = "reservation-modal__input";
+
+        return isInvalid
+            ? $"{baseClass} {baseClass}--invalid"
+            : baseClass;
+    }
+}

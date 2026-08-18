@@ -2,6 +2,7 @@ using sushi_restaurant_project.Shared.Database;
 using sushi_restaurant_project.Shared.Services;
 using sushi_restaurant_project.Web.Components;
 using sushi_restaurant_project.Web.Services;
+using sushi_restaurant_project.Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,7 @@ builder.Services.AddSingleton<SushiDatabase>(_ =>
 
 builder.Services.AddSingleton<DatabaseSeeder>();
 builder.Services.AddSingleton<IPlateService, PlateService>();
+builder.Services.AddScoped<OrderState>();
 
 var app = builder.Build();
 
