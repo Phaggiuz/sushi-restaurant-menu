@@ -3,6 +3,7 @@
 @using System.Globalization
 @using sushi_restaurant_project.Shared.Models
 @using sushi_restaurant_project.Shared.Services
+@using sushi_restaurant_project.Shared.Components
 @inject IPlateService PlateService
 @inject OrderState OrderState
 @inject NavigationManager NavigationManager
@@ -461,11 +462,7 @@
 
     </main>
 
-    <footer class="customer-footer">
-        <p class="customer-footer__text">
-            UMI — INDIRIZZO · APERTO TUTTI I GIORNI 17:00 — 23:00
-        </p>
-    </footer>
+    <CustomerFooter />
 </div>
 
 @code {

@@ -1,11 +1,15 @@
 ﻿@page "/"
 @using sushi_restaurant_project.Shared.Models
+@using sushi_restaurant_project.Shared.Components
 @inject OrderState OrderState
 @inject NavigationManager NavigationManager
 
 <PageTitle>Umi — Omakase & Sushi Bar</PageTitle>
 
-<div class="home-page @(isReservationModalOpen ? "home-page--modal-open" : string.Empty)">
+<div class="@GetHomePageClass()"
+     @onpointerdown="OnHomePointerDown"
+     @onpointerup="OnHomePointerUp"
+     @onpointercancel="ResetStaffGesture">
 
     <main class="home-hero">
 
@@ -42,16 +46,10 @@
 
                 <button class="home-hero__button home-hero__button--primary"
                         type="button"
-                        @onclick="ExploreMenu">
+                        @onclick="ExploreMenu"
+                        @onpointerdown:stopPropagation="true">
 
                     Esplora il menu
-                </button>
-
-                <button class="home-hero__button home-hero__button--secondary"
-                        type="button"
-                        @onclick="OpenReservationModal">
-
-                    Riserva il tavolo
                 </button>
 
             </div>
@@ -59,6 +57,8 @@
         </div>
 
     </main>
+
+    <CustomerFooter />
 
     @if (isReservationModalOpen)
     {
@@ -180,6 +180,88 @@
         </div>
     }
 
+    @if (isStaffLoginOpen)
+    {
+        <div class="staff-login-overlay">
+
+            <section class="staff-login-panel"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="staff-login-title"
+                     @onpointerdown:stopPropagation="true">
+
+                <button class="staff-login__close"
+                        type="button"
+                        aria-label="Chiudi accesso staff"
+                        @onclick="CloseStaffLogin">
+
+                    <span aria-hidden="true">×</span>
+
+                </button>
+
+                <div class="staff-login__content">
+
+                    <span class="staff-login__eyebrow">
+                        AREA RISERVATA
+                    </span>
+
+                    <h2 id="staff-login-title"
+                        class="staff-login__title">
+
+                        Accesso Staff
+                    </h2>
+
+                    <p class="staff-login__description">
+                        Accedi con le credenziali assegnate al personale.
+                    </p>
+
+                    <div class="staff-login__form">
+
+                        <div class="staff-login__field">
+
+                            <label class="staff-login__label"
+                                   for="staff-username">
+                                Username
+                            </label>
+
+                            <input id="staff-username"
+                                   class="staff-login__input"
+                                   type="text"
+                                   autocomplete="username"
+                                   placeholder="Username" />
+
+                        </div>
+
+                        <div class="staff-login__field">
+
+                            <label class="staff-login__label"
+                                   for="staff-password">
+                                Password
+                            </label>
+
+                            <input id="staff-password"
+                                   class="staff-login__input"
+                                   type="password"
+                                   autocomplete="current-password"
+                                   placeholder="Password" />
+
+                        </div>
+
+                        <button class="staff-login__submit"
+                                type="button"
+                                disabled>
+                            Accedi
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+    }
+
 </div>
 
 @code {
@@ -188,6 +270,34 @@
 
     private string tableNumberInput = string.Empty;
     private string peopleCountInput = string.Empty;
+
+    private const double StaffGestureMinimumDistance = 180;
+    private const double StaffGestureMaximumVerticalDistance = 70;
+    private const double StaffGestureHorizontalRatio = 2;
+
+    private static readonly TimeSpan StaffGestureMinimumDuration =
+        TimeSpan.FromMilliseconds(150);
+
+    private static readonly TimeSpan StaffGestureMaximumDuration =
+        TimeSpan.FromSeconds(2);
+
+    private bool isStaffLoginOpen;
+    private bool isStaffGestureTracking;
+
+    private double staffGestureStartX;
+    private double staffGestureStartY;
+
+    private DateTimeOffset staffGestureStartTime;
+
+    private string GetHomePageClass()
+    {
+        var hasOpenModal =
+            isReservationModalOpen || isStaffLoginOpen;
+
+        return hasOpenModal
+            ? "home-page home-page--modal-open"
+            : "home-page";
+    }
 
     private bool HasStoredReservation =>
         OrderState.Order.TableNumber is >= 1 and <= 99
@@ -236,14 +346,10 @@
             return;
         }
 
-        OpenReservationModal();
-    }
-
-    private void OpenReservationModal()
-    {
         reservationSubmitted = false;
         isReservationModalOpen = true;
     }
+
 
     private void CloseReservationModal()
     {
@@ -322,4 +428,92 @@
             ? $"{baseClass} {baseClass}--invalid"
             : baseClass;
     }
+
+    /// <summary>
+    /// Inizia a rilevare una possibile gesture per l'accesso staff.
+    /// La gesture viene ignorata quando è già aperto un modale.
+    /// </summary>
+    private void OnHomePointerDown(PointerEventArgs eventArgs)
+    {
+        if (isReservationModalOpen || isStaffLoginOpen)
+        {
+            ResetStaffGesture();
+            return;
+        }
+
+        isStaffGestureTracking = true;
+
+        staffGestureStartX = eventArgs.ClientX;
+        staffGestureStartY = eventArgs.ClientY;
+        staffGestureStartTime = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Verifica che il gesto concluso sia uno swipe intenzionale
+    /// e prevalentemente orizzontale da destra verso sinistra.
+    /// </summary>
+    private void OnHomePointerUp(PointerEventArgs eventArgs)
+    {
+        if (!isStaffGestureTracking)
+        {
+            return;
+        }
+
+        var deltaX =
+            eventArgs.ClientX - staffGestureStartX;
+
+        var deltaY =
+            eventArgs.ClientY - staffGestureStartY;
+
+        var horizontalDistance =
+            Math.Abs(deltaX);
+
+        var verticalDistance =
+            Math.Abs(deltaY);
+
+        var gestureDuration =
+            DateTimeOffset.UtcNow - staffGestureStartTime;
+
+        ResetStaffGesture();
+
+        var isLeftSwipe =
+            deltaX <= -StaffGestureMinimumDistance;
+
+        var hasLimitedVerticalMovement =
+            verticalDistance <= StaffGestureMaximumVerticalDistance;
+
+        var isPredominantlyHorizontal =
+            horizontalDistance >= verticalDistance * StaffGestureHorizontalRatio;
+
+        var hasValidDuration =
+            gestureDuration >= StaffGestureMinimumDuration
+            && gestureDuration <= StaffGestureMaximumDuration;
+
+        if (!isLeftSwipe
+            || !hasLimitedVerticalMovement
+            || !isPredominantlyHorizontal
+            || !hasValidDuration)
+        {
+            return;
+        }
+
+        isStaffLoginOpen = true;
+    }
+
+    private void ResetStaffGesture()
+    {
+        isStaffGestureTracking = false;
+
+        staffGestureStartX = 0;
+        staffGestureStartY = 0;
+
+        staffGestureStartTime = default;
+    }
+
+    private void CloseStaffLogin()
+    {
+        isStaffLoginOpen = false;
+    }
+
+
 }
