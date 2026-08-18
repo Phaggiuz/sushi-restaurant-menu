@@ -924,87 +924,6 @@
     border-bottom: 1px solid #28231d;
 }
 
-.order-drawer__fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-}
-
-.order-drawer__field {
-    min-width: 0;
-}
-
-.order-drawer__field-label {
-    display: block;
-    margin-bottom: 8px;
-    color: #b5a694;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 0.7rem;
-    font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: 0.9px;
-    text-transform: uppercase;
-}
-
-.order-drawer__input {
-    width: 100%;
-    height: 46px;
-    padding: 0 14px;
-    box-sizing: border-box;
-    appearance: none;
-    -webkit-appearance: none;
-    color: #f4eee4;
-    background: #15120f;
-    border: 1px solid #393128;
-    border-radius: 10px;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 1rem;
-    outline: none;
-    color-scheme: dark;
-    transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
-}
-
-    .order-drawer__input::placeholder {
-        color: #62594f;
-    }
-
-    .order-drawer__input:hover {
-        border-color: #514437;
-    }
-
-    .order-drawer__input:focus {
-        background: #191510;
-        border-color: #c99d64;
-        box-shadow: 0 0 0 3px rgba(201, 157, 100, 0.13);
-    }
-
-.order-drawer__input--invalid {
-    border-color: #cf7958;
-}
-
-    .order-drawer__input--invalid:focus {
-        border-color: #cf7958;
-        box-shadow: 0 0 0 3px rgba(207, 121, 88, 0.15);
-    }
-
-.order-drawer__field-help {
-    display: block;
-    margin-top: 7px;
-    color: #71675c;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 0.68rem;
-    line-height: 1.4;
-}
-
-.order-drawer__validation-message {
-    display: block;
-    margin-top: 6px;
-    color: #df8c6d;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 0.68rem;
-    line-height: 1.4;
-}
-
 /* All You Can Eat */
 
 .order-drawer__ayce-option {
@@ -1093,30 +1012,6 @@
 .order-drawer__ayce-input:focus-visible + .order-drawer__ayce-switch {
     outline: 2px solid #c99d64;
     outline-offset: 3px;
-}
-
-    .order-drawer__table-input::placeholder {
-        color: #62594f;
-    }
-
-    .order-drawer__table-input:focus {
-        border-color: #c99d64;
-        box-shadow: 0 0 0 3px rgba(201, 157, 100, 0.13);
-    }
-
-    .order-drawer__table-input--invalid:focus {
-        border-color: #cf7958;
-        box-shadow: 0 0 0 3px rgba(207, 121, 88, 0.15);
-    }
-
-
-.order-drawer__validation-message {
-    display: block;
-    margin-top: 6px;
-    color: #df8c6d;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 0.72rem;
-    line-height: 1.4;
 }
 
 /* Contenuto ordine */
@@ -1508,10 +1403,6 @@
 }
 
 @media (max-width: 480px) {
-    .order-drawer__fields {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
     .order-drawer__configuration {
         padding-inline: 18px;
     }

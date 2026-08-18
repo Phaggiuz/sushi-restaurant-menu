@@ -1,8 +1,11 @@
 ﻿@page "/client"
+
 @using System.Globalization
 @using sushi_restaurant_project.Shared.Models
 @using sushi_restaurant_project.Shared.Services
 @inject IPlateService PlateService
+@inject OrderState OrderState
+@inject NavigationManager NavigationManager
 
 <div class="client-page @(isOrderOpen ? "client-page--order-open" : string.Empty)">
 
@@ -83,72 +86,6 @@
                 </header>
 
                 <div class="order-drawer__configuration">
-
-                    <div class="order-drawer__fields">
-
-                        <div class="order-drawer__field">
-
-                            <label class="order-drawer__field-label"
-                                   for="order-table-number">
-                                Numero tavolo
-                            </label>
-
-                            <input id="order-table-number"
-                                   class="@GetOrderInputClass(HasInvalidTableNumber)"
-                                   type="text"
-                                   inputmode="numeric"
-                                   maxlength="2"
-                                   value="@tableNumberInput"
-                                   placeholder="1 - 99"
-                                   autocomplete="off"
-                                   aria-invalid="@HasInvalidTableNumber"
-                                   @oninput="OnTableNumberInput" />
-
-                            <span class="order-drawer__field-help">
-                                Inserisci un numero da 1 a 99.
-                            </span>
-
-                            @if (HasInvalidTableNumber)
-                            {
-                                <span class="order-drawer__validation-message">
-                                    Il tavolo deve essere compreso tra 1 e 99.
-                                </span>
-                            }
-
-                        </div>
-
-                        <div class="order-drawer__field">
-
-                            <label class="order-drawer__field-label"
-                                   for="order-people-count">
-                                Numero persone
-                            </label>
-
-                            <input id="order-people-count"
-                                   class="@GetOrderInputClass(HasInvalidPeopleCount)"
-                                   type="text"
-                                   inputmode="numeric"
-                                   maxlength="2"
-                                   value="@peopleCountInput"
-                                   placeholder="1 - 99"
-                                   autocomplete="off"
-                                   aria-invalid="@HasInvalidPeopleCount"
-                                   @oninput="OnPeopleCountInput" />
-
-                            <span class="order-drawer__field-help">
-                                Inserisci un numero da 1 a 99.
-                            </span>
-
-                            @if (HasInvalidPeopleCount)
-                            {
-                                <span class="order-drawer__validation-message">
-                                    Le persone devono essere comprese tra 1 e 99.
-                                </span>
-                            }
-
-                        </div>
-
-                    </div>
 
                     <label class="order-drawer__ayce-option">
 
@@ -548,27 +485,35 @@
     private readonly HashSet<int> flippedPlateIds = [];
 
     // Rappresenta gli articoli presenti nel carrello visualizzato nel drawer.
-    private readonly List<OrderItem> orderItems = [];
+    private List<OrderItem> orderItems = [];
 
     private bool isOrderOpen;
-
-    // Tavolo e numero di persone vengono mantenuti come stringhe perché sono
-    // direttamente collegati agli input della UI. La conversione numerica viene
-    // effettuata solo dopo averne verificato la validità.
-    private string tableNumberInput = string.Empty;
-    private string peopleCountInput = string.Empty;
-
     private bool isAllYouCanEat;
+    private bool shouldRedirectToHome;
 
-    // OrderState mantiene la rappresentazione completa dell'ordine corrente.
-    // Viene sincronizzato con lo stato della UI ogni volta che cambiano
-    // configurazione dell'ordine, quantità o contenuto del carrello.
-    private readonly OrderState orderState = new();
+    /// <summary>
+    /// Verifica che l'utente abbia completato la configurazione iniziale
+    /// del tavolo prima di poter utilizzare il menu.
+    /// </summary>
+    private bool HasValidReservation
+    {
+        get
+        {
+            var order = OrderState.Order;
+
+            return order.TableNumber is int tableNumber
+                && tableNumber is >= 1 and <= 99
+                && order.PeopleCount is int peopleCount
+                && peopleCount is >= 1 and <= 99;
+        }
+    }
 
     // Tariffe attualmente definite lato client.
     // Potranno essere sostituite in futuro da valori provenienti da un servizio.
     private const decimal CoverChargePerPerson = 2.00m;
     private const decimal AllYouCanEatPricePerPerson = 14.90m;
+
+
 
     /// <summary>
     /// Verifica se la card del piatto specificato è attualmente visualizzata sul retro.
@@ -586,49 +531,11 @@
         orderItems.Sum(item => item.Quantity);
 
     /// <summary>
-    /// Il numero del tavolo è valido solamente se compreso tra 1 e 99.
-    /// Il valore zero non identifica quindi un tavolo valido.
-    /// </summary>
-    private bool HasValidTableNumber =>
-        TryParseNumberInRange(
-            tableNumberInput,
-            1,
-            99,
-            out _);
-
-    // L'errore viene mostrato solamente dopo che l'utente ha inserito un valore.
-    // Un campo vuoto resta invalido ai fini dell'ordine, ma non viene evidenziato
-    // immediatamente come errore nella UI.
-    private bool HasInvalidTableNumber =>
-        !string.IsNullOrWhiteSpace(tableNumberInput)
-        && !HasValidTableNumber;
-
-    /// <summary>
-    /// Il numero di persone è obbligatorio e deve essere compreso tra 1 e 99.
-    /// </summary>
-    private bool HasValidPeopleCount =>
-        TryParseNumberInRange(
-            peopleCountInput,
-            1,
-            99,
-            out _);
-
-    private bool HasInvalidPeopleCount =>
-        !string.IsNullOrWhiteSpace(peopleCountInput)
-        && !HasValidPeopleCount;
-
-    /// <summary>
-    /// Restituisce il numero di persone valido oppure zero se il campo
-    /// non contiene ancora un valore utilizzabile.
+    /// Numero di persone configurato nella Home.
+    /// Viene utilizzato per il calcolo del coperto e della modalità AYCE.
     /// </summary>
     private int PeopleCount =>
-        TryParseNumberInRange(
-            peopleCountInput,
-            1,
-            99,
-            out var peopleCount)
-            ? peopleCount
-            : 0;
+        OrderState.Order.PeopleCount ?? 0;
 
     /// <summary>
     /// Totale dei prezzi dei singoli piatti presenti nell'ordine.
@@ -671,24 +578,15 @@
             ? OrderAllYouCanEatAmount + OrderCoverAmount
             : OrderItemsSubtotal + OrderCoverAmount;
 
-    /// <summary>
-    /// L'ordine può essere inviato solamente se contiene almeno un piatto
-    /// e sono stati specificati tavolo e numero di persone validi.
-    /// </summary>
     private bool CanPlaceOrder =>
         orderItems.Count > 0
-        && HasValidTableNumber
-        && HasValidPeopleCount;
+        && HasValidReservation;
 
     private string CoverSummaryLabel =>
-        HasValidPeopleCount
-            ? $"Coperto ({PeopleCount} × {FormatPrice(CoverChargePerPerson)})"
-            : "Coperto";
+        $"Coperto ({PeopleCount} × {FormatPrice(CoverChargePerPerson)})";
 
     private string AllYouCanEatSummaryLabel =>
-        HasValidPeopleCount
-            ? $"All You Can Eat ({PeopleCount} × {FormatPrice(AllYouCanEatPricePerPerson)})"
-            : "All You Can Eat";
+        $"All You Can Eat ({PeopleCount} × {FormatPrice(AllYouCanEatPricePerPerson)})";
 
     /// <summary>
     /// Fornisce alla UI la motivazione per cui il pulsante "Ordina"
@@ -699,19 +597,14 @@
     {
         get
         {
+            if (!HasValidReservation)
+            {
+                return "Configura tavolo e numero di persone prima di ordinare.";
+            }
+
             if (orderItems.Count == 0)
             {
                 return "Aggiungi almeno un piatto all'ordine.";
-            }
-
-            if (!HasValidTableNumber)
-            {
-                return "Seleziona un numero del tavolo da 1 a 99.";
-            }
-
-            if (!HasValidPeopleCount)
-            {
-                return "Seleziona il numero di persone da 1 a 99.";
             }
 
             return "Invia l'ordine alla cucina.";
@@ -754,25 +647,6 @@
         SyncOrderState();
     }
 
-    /// <summary>
-    /// Converte un valore testuale in intero verificando contestualmente
-    /// che appartenga all'intervallo consentito.
-    /// </summary>
-    private static bool TryParseNumberInRange(
-        string value,
-        int minimum,
-        int maximum,
-        out int parsedValue)
-    {
-        return int.TryParse(
-                value,
-                NumberStyles.None,
-                CultureInfo.InvariantCulture,
-                out parsedValue)
-            && parsedValue >= minimum
-            && parsedValue <= maximum;
-    }
-
     private void IncreaseQuantity(OrderItem item)
     {
         item.Quantity++;
@@ -797,34 +671,6 @@
         SyncOrderState();
     }
 
-    /// <summary>
-    /// Applica all'input la classe di validazione prevista dal drawer ordine.
-    /// </summary>
-    private static string GetOrderInputClass(bool isInvalid)
-    {
-        const string baseClass = "order-drawer__input";
-
-        return isInvalid
-            ? $"{baseClass} {baseClass}--invalid"
-            : baseClass;
-    }
-
-    private void OnTableNumberInput(ChangeEventArgs eventArgs)
-    {
-        tableNumberInput =
-            NormalizeNumericInput(eventArgs.Value?.ToString());
-
-        SyncOrderState();
-    }
-
-    private void OnPeopleCountInput(ChangeEventArgs eventArgs)
-    {
-        peopleCountInput =
-            NormalizeNumericInput(eventArgs.Value?.ToString());
-
-        SyncOrderState();
-    }
-
     private void OnAllYouCanEatChanged(ChangeEventArgs eventArgs)
     {
         isAllYouCanEat =
@@ -834,57 +680,17 @@
         SyncOrderState();
     }
 
-    /// <summary>
-    /// Normalizza gli input numerici di tavolo e persone:
-    /// mantiene solamente le cifre e limita l'input a due caratteri,
-    /// coerentemente con l'intervallo 1-99 previsto dalla UI.
-    /// </summary>
-    private static string NormalizeNumericInput(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        return new string(
-            value
-                .Where(char.IsDigit)
-                .Take(2)
-                .ToArray());
-    }
 
     /// <summary>
-    /// Sincronizza lo stato visualizzato dal componente con l'Order
-    /// mantenuto nell'OrderState.
+    /// Sincronizza con l'OrderState le informazioni dell'ordine gestite
+    /// direttamente dalla pagina menu.
     ///
-    /// Questo metodo costituisce il punto centrale di aggiornamento
-    /// dell'ordine: deve essere richiamato ogni volta che cambiano
-    /// tavolo, persone, modalità AYCE, contenuto o quantità dei piatti.
-    ///
-    /// I valori numerici non validi vengono rappresentati nell'Order
-    /// come null invece di propagare dati non utilizzabili.
+    /// Tavolo e numero di persone non vengono modificati qui perché sono
+    /// configurati nella Home e devono rimanere invariati per tutto l'iter.
     /// </summary>
     private void SyncOrderState()
     {
-        var order = orderState.Order;
-
-        order.TableNumber =
-            TryParseNumberInRange(
-                tableNumberInput,
-                1,
-                99,
-                out var tableNumber)
-                ? tableNumber
-                : null;
-
-        order.PeopleCount =
-            TryParseNumberInRange(
-                peopleCountInput,
-                1,
-                99,
-                out var peopleCount)
-                ? peopleCount
-                : null;
+        var order = OrderState.Order;
 
         order.IsAllYouCanEat = isAllYouCanEat;
         order.Items = orderItems;
@@ -915,7 +721,7 @@
         // in modo che il futuro servizio riceva sempre lo stato corrente della UI.
         SyncOrderState();
 
-        var currentOrder = orderState.Order;
+        var currentOrder = OrderState.Order;
 
         /*
          * Punto di integrazione previsto per il futuro servizio di invio ordine.
@@ -986,6 +792,18 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        if (!HasValidReservation)
+        {
+            shouldRedirectToHome = true;
+            isLoading = false;
+            return;
+        }
+
+        // Ripristina lo stato dell'ordine già presente durante
+        // l'iter corrente dell'utente.
+        orderItems = OrderState.Order.Items ?? [];
+        isAllYouCanEat = OrderState.Order.IsAllYouCanEat;
+
         try
         {
             plates = await PlateService.GetPlatesAsync();
@@ -996,10 +814,22 @@
         }
         finally
         {
-            // Il caricamento deve terminare sia in caso di successo
-            // sia in caso di errore, per evitare di lasciare la UI
-            // permanentemente nello stato "Caricamento menu...".
             isLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Reindirizza alla Home gli accessi diretti al menu privi
+    /// di una configurazione valida del tavolo.
+    ///
+    /// Il redirect viene eseguito dopo il primo rendering interattivo
+    /// per evitare NavigationException durante il prerendering server.
+    /// </summary>
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && shouldRedirectToHome)
+        {
+            NavigationManager.NavigateTo("/", replace: true);
         }
     }
 
